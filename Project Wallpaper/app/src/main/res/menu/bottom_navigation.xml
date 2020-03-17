@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menuHomeWallpaper"
+        android:icon="@drawable/ic_image_home"
+        android:title="Wallpaper"/>
+
+    <item
+        android:id="@+id/menuMoreApplication"
+        android:icon="@drawable/ic_more_application"
+        android:title="More Apps"/>
+
+    <item
+        android:id="@+id/menuPrivacy"
+        android:icon="@drawable/ic_privacy"
+        android:title="Privacy"/>
+
+</menu>

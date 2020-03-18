@@ -1,6 +1,7 @@
 package id.arei.home.wallpaperapplication.home_wallpaper.detail_wallpaper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -13,11 +14,15 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,6 +32,9 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,13 +63,21 @@ public class DetailWallpaper extends AppCompatActivity {
             }
         });
 
-        setToolbar();
+//        setToolbar();
         setImageViewWallpaper();
 
         permissionList = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
         if (checkPermission()) {
             createWallpaperFolder();
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            Window w = getWindow();
+            w.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
         }
     }
 
@@ -112,35 +128,86 @@ public class DetailWallpaper extends AppCompatActivity {
     }
 
     private void setHomeWallpaper() {
-        setHomeWallpaperImage.setOnClickListener(new View.OnClickListener() {
+        setLockHomeWallpaperImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
-                downloadWallpaper();
+                setLockHomeWallpapers();
+            }
+        });
+
+        setLockHomeWallpaperText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setLockHomeWallpapers();
+            }
+        });
+
+        setLockWallpaperImage.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void onClick(View v) {
+                setLockWallpapers();
+            }
+        });
+
+        setLockWallpaperText.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void onClick(View v) {
+                setLockWallpapers();
+            }
+        });
+
+        setHomeWallpaperImage.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void onClick(View v) {
+                setHomeWallpapers();
             }
         });
 
         setHomeWallpaperText.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onClick(View v) {
-                downloadWallpaper();
+                setHomeWallpapers();
             }
         });
     }
 
-    private void downloadWallpaper() {
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void setHomeWallpapers() {
         String getImage = getIntent().getStringExtra("imageURL");
-        String getTitle = getIntent().getStringExtra("titleImage");
-        DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-        Uri uri = Uri.parse(getImage);
-        DownloadManager.Request request = new DownloadManager.Request(uri);
-        request.setVisibleInDownloadsUi(true);
-        request.setTitle(getTitle + ".jpg");
-        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE);
-        request.setDestinationInExternalPublicDir(Environment.getExternalStorageDirectory() + "/WallpaperApplication/", getTitle + ".jpg");
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        Toast.makeText(this, "Download Complete", Toast.LENGTH_SHORT).show();
-        downloadManager.enqueue(request);
+        WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
+        try {
+            InputStream inputStream = new URL(getImage).openStream();
+            wallpaperManager.setStream(inputStream, null, true, WallpaperManager.FLAG_SYSTEM);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void setLockWallpapers() {
+        String getImage = getIntent().getStringExtra("imageURL");
+        WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
+        try {
+            InputStream inputStream = new URL(getImage).openStream();
+            wallpaperManager.setStream(inputStream, null, true, WallpaperManager.FLAG_LOCK);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setLockHomeWallpapers() {
+        String getImage = getIntent().getStringExtra("imageURL");
+        WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
+        try {
+            InputStream inputStream = new URL(getImage).openStream();
+            wallpaperManager.setStream(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void createWallpaperFolder() {

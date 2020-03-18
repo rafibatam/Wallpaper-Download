@@ -10,5 +10,9 @@ import retrofit2.http.Query;
 public interface BaseAPIService {
     @Headers("Content-Type: application/json")
     @GET("posts")
-    Call<JsonObject> getImage(@Query("key") String keyAPI, @Query("pagetoken") String pageToken);
+    Call<JsonObject> getImageFirst(@Query("key") String keyAPI);
+
+    @Headers("Content-Type: application/json")
+    @GET("posts")
+    Call<JsonObject> getImageNext(@Query("key") String keyAPI, @Query("pageToken") String pageToken);
 }

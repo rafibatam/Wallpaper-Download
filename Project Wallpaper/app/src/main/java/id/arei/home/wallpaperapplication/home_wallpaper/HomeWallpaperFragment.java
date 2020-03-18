@@ -33,6 +33,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import id.arei.home.wallpaperapplication.ModelWallpaper.ModelGetWallpaper;
@@ -47,7 +48,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HomeWallpaperFragment extends Fragment {
-    private static final String NEXT_PAGE_TOKEN = "CgkIChjjkIHohi4QybiIt8XsmPBH";
+    private String NEXT_PAGE_TOKEN;
     private static final String FIX_TOKEN = "AIzaSyCfxpk5yzqsJHxUTr7tU9o-bss-J7A-b1I";
 
     private Toolbar toolbar;
@@ -136,12 +137,15 @@ public class HomeWallpaperFragment extends Fragment {
     }
 
     private void loadFirstPage() {
-        modelGetWallpaperCall().enqueue(new Callback<JsonObject>() {
+        modelGetWallpaperCallFirst().enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if (response.isSuccessful()) {
                     try {
                         JSONObject jsonObject = new JSONObject(response.body().toString());
+
+                        NEXT_PAGE_TOKEN = jsonObject.getString("nextPageToken");
+
                         JSONArray itemsArray = jsonObject.getJSONArray("items");
                         modelGetWallpaperList = new ArrayList<>();
                         progressBar.setVisibility(View.GONE);
@@ -168,6 +172,9 @@ public class HomeWallpaperFragment extends Fragment {
 
                     if (currentPage <= TOTAL_PAGES && currentPage < adapterWallpaper.getItemCount()) adapterWallpaper.addLoadingFooter();
                     else isLastPage = true;
+                } else {
+                    Toast.makeText(mContext, "Connection Error", Toast.LENGTH_SHORT).show();
+                    progressBar.setVisibility(View.GONE);
                 }
             }
 
@@ -180,7 +187,7 @@ public class HomeWallpaperFragment extends Fragment {
     }
 
     private void loadNextPage() {
-        modelGetWallpaperCall().enqueue(new Callback<JsonObject>() {
+        modelGetWallpaperCallNext().enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 adapterWallpaper.removeLoadingFooter();
@@ -189,32 +196,40 @@ public class HomeWallpaperFragment extends Fragment {
                 if (response.isSuccessful()) {
                     try {
                         JSONObject jsonObject = new JSONObject(response.body().toString());
-                        JSONArray itemsArray = jsonObject.getJSONArray("items");
-                        modelGetWallpaperList = new ArrayList<>();
-                        progressBar.setVisibility(View.GONE);
 
-                        for (int a = 0; a < itemsArray.length(); a++) {
-                            JSONObject objectData = itemsArray.getJSONObject(a);
+                        if (jsonObject.has("nextPageToken")) {
+                            NEXT_PAGE_TOKEN = jsonObject.getString("nextPageToken");
 
-                            String getContent = objectData.getString("content");
-                            Document convertHtml = Jsoup.parse(getContent);
-                            String getLink = convertHtml.select(".separator a").attr("href");
-
-                            ModelGetWallpaper modelGetWallpaper = new ModelGetWallpaper();
-                            modelGetWallpaper.setTitle(objectData.getString("title"));
-                            modelGetWallpaper.setContentImage(getLink);
-
-                            modelGetWallpaperList.add(modelGetWallpaper);
+                            JSONArray itemsArray = jsonObject.getJSONArray("items");
+                            modelGetWallpaperList = new ArrayList<>();
                             progressBar.setVisibility(View.GONE);
-                        }
 
-                        adapterWallpaper.addAll(modelGetWallpaperList);
+                            for (int a = 0; a < itemsArray.length(); a++) {
+                                JSONObject objectData = itemsArray.getJSONObject(a);
+
+                                String getContent = objectData.getString("content");
+                                Document convertHtml = Jsoup.parse(getContent);
+                                String getLink = convertHtml.select(".separator a").attr("href");
+
+                                ModelGetWallpaper modelGetWallpaper = new ModelGetWallpaper();
+                                modelGetWallpaper.setTitle(objectData.getString("title"));
+                                modelGetWallpaper.setContentImage(getLink);
+
+                                modelGetWallpaperList.add(modelGetWallpaper);
+                                progressBar.setVisibility(View.GONE);
+                            }
+
+                            adapterWallpaper.addAll(modelGetWallpaperList);
+                        }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
 
                     if (currentPage != TOTAL_PAGES && currentPage < adapterWallpaper.getItemCount()) adapterWallpaper.addLoadingFooter();
                     else isLastPage = true;
+                } else {
+                    Toast.makeText(mContext, "Connection Error", Toast.LENGTH_SHORT).show();
+                    progressBar.setVisibility(View.GONE);
                 }
             }
 
@@ -226,7 +241,11 @@ public class HomeWallpaperFragment extends Fragment {
         });
     }
 
-    private Call<JsonObject> modelGetWallpaperCall() {
-        return baseAPIService.getImage(FIX_TOKEN, NEXT_PAGE_TOKEN);
+    private Call<JsonObject> modelGetWallpaperCallFirst() {
+        return baseAPIService.getImageFirst(FIX_TOKEN);
+    }
+
+    private Call<JsonObject> modelGetWallpaperCallNext() {
+        return baseAPIService.getImageNext(FIX_TOKEN, NEXT_PAGE_TOKEN);
     }
 }
